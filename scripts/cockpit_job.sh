@@ -16,11 +16,13 @@ cd "$REPO"
 run() { echo "==> $*"; "$PY" -m "$@"; }
 
 case "$SLOT" in
-  morning)  run cockpit.jobs.brief; run cockpit.jobs.inbox; run cockpit.jobs.meeting_prep ;;
-  eod)      run cockpit.jobs.wrap ;;
+  morning)  run cockpit.jobs.brief; run cockpit.jobs.inbox; run cockpit.jobs.meeting_prep; run cockpit.jobs.notifications ;;
+  eod)      run cockpit.jobs.wrap; run cockpit.jobs.notifications ;;
+  friday)   run cockpit.jobs.workplace_digest ;;
   monday)   run cockpit.jobs.top_of_mind ;;
-  all)      run cockpit.jobs.brief; run cockpit.jobs.inbox; run cockpit.jobs.meeting_prep; run cockpit.jobs.wrap ;;
-  *) echo "Unknown slot: $SLOT (use morning|eod|monday|all)"; exit 1 ;;
+  all)      run cockpit.jobs.brief; run cockpit.jobs.inbox; run cockpit.jobs.meeting_prep; \
+            run cockpit.jobs.notifications; run cockpit.jobs.workplace_digest; run cockpit.jobs.wrap ;;
+  *) echo "Unknown slot: $SLOT (use morning|eod|friday|monday|all)"; exit 1 ;;
 esac
 
 echo "==> rebuild dashboard"

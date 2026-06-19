@@ -24,21 +24,27 @@ work tools ──(meta CLI)──► cockpit/jobs/*  ──► portal_data/*.jso
 ## Tabs
 | Tab | Shows | Jobs |
 |-----|-------|------|
-| **Now / Next** | morning headline, next meeting, **meeting-prep packet**, today's focus, agenda, shared docs | A1 + A3 |
+| **Now / Next** | morning headline, next meeting, **meeting-prep packet**, today's focus, agenda, shared docs, **extracted action items** | A1 + A3 + A10 |
 | **Inbox** | priority unread, drafted replies, waiting-on + draft nudges | A2 + A5 |
-| **Workplace** | Monday "Top of Mind" draft (staged for approval) | Top of Mind |
+| **Workplace** | **action notifications** (with tab badge), **weekly digest**, Monday "Top of Mind" draft | A8 + A6 + Top of Mind |
 | **Wrap** | end-of-day recap + tomorrow preview | A7 |
 
 ## What's built
 - `cockpit/` — Python package: `config`, `llm` (local Llama), `connectors`
-  (`meta google.*`), `sample_data`, `jobs/{brief,inbox,meeting_prep,wrap,top_of_mind}`,
-  `build_cockpit` (4-tab dashboard), `server` (Flask brain).
+  (`meta google.*`), `sample_data`, `build_cockpit` (4-tab dashboard),
+  `server` (Flask brain), and `jobs/`:
+  - `brief` (A1), `inbox` (A2+A5), `meeting_prep` (A3), `wrap` (A7)
+  - `top_of_mind` (Mon), `workplace_digest` (A6), `notifications` (A8), `doc_actions` (A10)
 - `cockpit_app/` — a **native Portal app** (`com.josephine.cockpit`), installed
   and running on the Portal. Built **without Gradle** via `build_apk.sh`
   (plain Java, no deps → aapt2/javac/d8/zipalign/apksigner). `./deploy.sh`
   builds + installs + launches; `./refresh.sh` hot-updates the dashboard.
-- `scripts/cockpit_job.sh` + launchd plists — 8am brief+inbox+meeting-prep,
-  5pm wrap, Mon 8am Top of Mind, plus an always-on server.
+- `scripts/cockpit_job.sh` + launchd plists — 8am brief+inbox+meeting-prep+notifs,
+  5pm wrap+notifs, Fri 4pm digest, Mon 8am Top of Mind, plus an always-on server.
+
+> **Note on A6/A8:** there's no clean first-party Workplace CLI yet, so
+> `connectors.workplace_*` are stubs that fall back to sample data. The jobs and
+> UI are complete — wire those connectors to the real Workplace surface to go live.
 
 ## Run it
 
@@ -94,8 +100,8 @@ Local Ollama on `127.0.0.1:11434`, model `llama3.1:8b` (text). Override with
 `mllama` arch unsupported — so text uses `llama3.1:8b`.)
 
 ## Still to do (later phases, per the brief)
-A6 weekly Workplace digest, A8 notification triage, A10 doc→actions; the voice
-layer; Home/Bee toggle. **Top of Mind** needs your real group + 2-3 example
-posts: set `COCKPIT_TOM_GROUP` and put examples in `cockpit/voice_examples.txt`
-(one per `---` separator).
+The voice layer (whisper.cpp + Piper); Home/Bee toggle; wiring the real
+Workplace connector for A6/A8. **Top of Mind** needs your real group + 2-3
+example posts: set `COCKPIT_TOM_GROUP` and put examples in
+`cockpit/voice_examples.txt` (one per `---` separator).
 ```

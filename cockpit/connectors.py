@@ -168,3 +168,31 @@ def gdoc_create_draft(title: str, markdown_body: str) -> dict:
             url = tok.strip().strip(".,")
             break
     return {"ok": True, "url": url, "raw": out.strip()[:500]}
+
+
+def gdoc_text(url: str) -> str:
+    """Fetch a Google Doc's plain text (for A10 doc→actions). '' on failure."""
+    try:
+        return _run(["google.docs", "get", f"--url={url}", "--format=text"], timeout=90)
+    except MetaCLIError:
+        return ""
+
+
+# ── Workplace (best-effort) ─────────────────────────────────────────────────
+# There is no clean first-party "my Workplace feed / notifications" CLI yet, so
+# these are intentionally thin: they raise NotAuthenticated so jobs fall back to
+# sample fixtures. Wire them to the real Workplace/Graph surface when available.
+
+def workplace_key_updates(limit: int = 10) -> list[dict]:
+    """Recent leadership/team key updates. TODO: wire to the Workplace surface."""
+    raise NotAuthenticated("Workplace connector not wired yet — using sample data.")
+
+
+def workplace_top_posts(limit: int = 10) -> list[dict]:
+    """Top posts across Jo's groups. TODO: wire to the Workplace surface."""
+    raise NotAuthenticated("Workplace connector not wired yet — using sample data.")
+
+
+def workplace_notifications(limit: int = 25) -> list[dict]:
+    """Workplace notifications to triage. TODO: wire to the Workplace surface."""
+    raise NotAuthenticated("Workplace connector not wired yet — using sample data.")

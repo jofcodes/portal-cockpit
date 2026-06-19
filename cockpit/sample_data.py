@@ -67,3 +67,40 @@ SAMPLE_MEETING_THREADS = [
     {"subject": "Re: Portal vibe-coding — can you demo Friday?", "from": "Maher Saba <maher@meta.com>"},
     {"subject": "Cockpit tab layout — feedback", "from": "Boz <boz@meta.com>"},
 ]
+
+# A6 — weekly Workplace digest inputs
+SAMPLE_KEY_UPDATES = [
+    {"author": "Boz", "group": "RL FYI", "title": "Portal, possible again",
+     "summary": "Reviving Portal as a home-hub; ADB access open to FTEs for vibe-coding."},
+    {"author": "Maher Saba", "group": "Claude Code Community", "title": "The 'Joe' build",
+     "summary": "Portal front-end ⇄ Mac brain, fully local, ADB deploy."},
+    {"author": "Leadership", "group": "RL Org", "title": "H2 priorities",
+     "summary": "Doubling down on local-first AI experiences across RL surfaces."},
+]
+SAMPLE_TOP_POSTS = [
+    {"author": "Jana Park", "group": "AI Productivity", "reactions": 142,
+     "title": "How I cut my meeting load 30% with a local agent"},
+    {"author": "Design Systems", "group": "RL Design", "reactions": 98,
+     "title": "Ambient surfaces: a pattern library for home devices"},
+]
+
+# A8 — notification triage inputs (mix of action-needed and FYI)
+SAMPLE_NOTIFICATIONS = [
+    {"kind": "mention", "from": "Maher Saba", "context": "RL FYI", "action": True,
+     "text": "@Jo can you demo the cockpit Friday?"},
+    {"kind": "comment", "from": "Boz", "context": "Cockpit tab layout doc", "action": True,
+     "text": "Left 2 comments — can you take a look before Thu?"},
+    {"kind": "reaction", "from": "12 people", "context": "your bee monitor post", "action": False,
+     "text": "reacted to your post"},
+    {"kind": "group_post", "from": "AI Productivity", "context": "weekly roundup", "action": False,
+     "text": "New weekly roundup posted"},
+]
+
+# A10 — doc → action items (sample doc text to extract from)
+SAMPLE_DOC_TEXT = (
+    "Cockpit planning notes — 2026-06-18\n\n"
+    "Decisions: ship the morning brief slice first; keep everything local on Llama.\n"
+    "Jo will confirm the Top of Mind group by Friday. Maher to share the Portal ADB guide. "
+    "Boz approved the home-hub direction. Next: wire real connectors after jf auth, then add "
+    "the weekly Workplace digest. Open question: voice layer now or later (deferred)."
+)

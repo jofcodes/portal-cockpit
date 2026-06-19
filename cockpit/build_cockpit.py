@@ -40,6 +40,9 @@ def generate() -> str:
         "workplace": _load("workplace"),
         "wrap": _load("wrap"),
         "meetings": _load("meetings"),
+        "digest": _load("digest"),
+        "notifications": _load("notifications"),
+        "actions": _load("actions"),
     }
     blob = json.dumps(data).replace("</", "<\\/")  # safe to embed in <script>
     generated = datetime.now().strftime("%a %b %-d · %-I:%M %p")
@@ -98,6 +101,7 @@ _TEMPLATE = r"""<!DOCTYPE html>
     background:transparent; color:var(--muted); border-radius:12px; transition:all .15s;
   }
   nav button.active { background:var(--panel2); color:var(--txt); box-shadow:inset 0 -3px 0 var(--accent); }
+  .navbadge { background:var(--bad); color:#fff; border-radius:11px; padding:1px 8px; font-size:.7em; margin-left:6px; vertical-align:middle; }
   main { flex:1; overflow-y:auto; padding:18px 22px 40px; }
   .tab { display:none; } .tab.active { display:block; animation:fade .2s; }
   @keyframes fade { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
@@ -191,6 +195,15 @@ function renderNow() {
   if (b.docs && b.docs.length) h += `<div class="card"><h3>Shared with you</h3>`
       + b.docs.map(d=>`<div class="row"><span class="what">${esc(d.name||"")}<div class="sub">${esc(d.owner||"")}</div></span></div>`).join('')
       + `</div>`;
+  // A10 — action items extracted from a doc/thread
+  const ac = DATA.actions || {};
+  if ((ac.actions||[]).length || (ac.decisions||[]).length) {
+    h += `<div class="card"><h3>Action items${sampleBadge(ac)}</h3>`;
+    if (ac.source) h += `<div class="sub" style="margin-bottom:8px">from ${esc(ac.source)}</div>`;
+    h += (ac.actions||[]).map(a=>`<div class="row"><span class="what">${esc(a.what||"")}
+        <div class="sub">${esc(a.owner||"")}${a.due?` · due ${esc(a.due)}`:""}</div></span></div>`).join('');
+    h += `</div>`;
+  }
   return h || `<div class="empty">No morning brief yet — run the brief job.</div>`;
 }
 
@@ -218,13 +231,36 @@ function renderInbox() {
 }
 
 function renderWorkplace() {
-  const w = DATA.workplace || {};
-  if (!w.draft) return `<div class="empty">No Top of Mind draft yet — runs Monday mornings.</div>`;
-  return `<div class="card"><h3>Monday Top of Mind — draft ready${sampleBadge(w)}</h3>
-      <div class="sub">Group: ${esc(w.group||"(not set)")}</div>
-      <div class="post">${esc(w.draft)}</div>
-      ${w.doc_url?`<div class="sub" style="margin-top:10px">Staged in Doc: ${esc(w.doc_url)}</div>`:""}
-      <div class="sub" style="margin-top:8px">Review &amp; approve before posting — nothing is auto-posted.</div></div>`;
+  const w = DATA.workplace || {};      // Top of Mind
+  const d = DATA.digest || {};         // A6 weekly digest
+  const nt = DATA.notifications || {};  // A8 notification triage
+  let h = '';
+
+  // A8 — action notifications first (most time-sensitive)
+  if ((nt.actions||[]).length) {
+    h += `<div class="card"><h3>Needs your action — ${nt.action_count||nt.actions.length} of ${nt.total||nt.actions.length}${sampleBadge(nt)}</h3>`
+      + nt.actions.map(n=>`<div class="row"><span class="what">${esc(n.text||"")}
+          <div class="sub">${esc(n.from||"")} · ${esc(n.context||"")}</div></span></div>`).join('')
+      + `</div>`;
+  }
+  // A6 — weekly digest
+  if (d.summary) {
+    h += `<div class="card"><h3>Weekly digest${sampleBadge(d)}</h3>
+        <div style="margin-bottom:10px">${esc(d.summary)}</div>`;
+    if ((d.key_updates||[]).length) h += `<div class="sub" style="margin-bottom:4px">Key updates</div>`
+        + d.key_updates.map(u=>`<div class="row"><span class="what">${esc(u.title||"")}
+            <div class="sub">${esc(u.author||"")} · ${esc(u.group||"")}</div></span></div>`).join('');
+    h += `</div>`;
+  }
+  // Top of Mind draft
+  if (w.draft) {
+    h += `<div class="card"><h3>Monday Top of Mind — draft ready${sampleBadge(w)}</h3>
+        <div class="sub">Group: ${esc(w.group||"(not set)")}</div>
+        <div class="post">${esc(w.draft)}</div>
+        ${w.doc_url?`<div class="sub" style="margin-top:10px">Staged in Doc: ${esc(w.doc_url)}</div>`:""}
+        <div class="sub" style="margin-top:8px">Review &amp; approve before posting — nothing is auto-posted.</div></div>`;
+  }
+  return h || `<div class="empty">No Workplace updates yet — digest runs Fri, Top of Mind Mon.</div>`;
 }
 
 function renderWrap() {
@@ -245,6 +281,10 @@ function render() {
   document.getElementById('inbox').innerHTML = renderInbox();
   document.getElementById('workplace').innerHTML = renderWorkplace();
   document.getElementById('wrap').innerHTML = renderWrap();
+  // A8 — badge the Workplace tab with the action-notification count
+  const nt = DATA.notifications || {};
+  const wbtn = document.querySelector('nav button[data-tab="workplace"]');
+  if (wbtn && nt.action_count) wbtn.innerHTML = 'Workplace <span class="navbadge">' + nt.action_count + '</span>';
 }
 
 // Tabs
