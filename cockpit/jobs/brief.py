@@ -73,10 +73,25 @@ def _fallback_focus(raw: dict) -> list[str]:
     return items or ["Clear inbox", "Plan the day", "Deep work block"]
 
 
+def _next_up(events: list[dict]) -> dict | None:
+    """The next event starting now-or-later; else the day's first event."""
+    from datetime import datetime
+    now = datetime.now().astimezone()
+    for e in events:
+        try:
+            if datetime.fromisoformat(e.get("iso", "")) >= now:
+                return e
+        except (ValueError, TypeError):
+            continue
+    return events[0] if events else None
+
+
 def build() -> dict:
     raw, used_sample = _gather()
+    # Drop calendar holds/blocks (Do Not Book, Break, Shuttle…) from the agenda.
+    raw["agenda"] = [e for e in raw["agenda"] if connectors.is_meeting(e)]
     summary = _summarize(raw)
-    next_meeting = raw["agenda"][0] if raw["agenda"] else None
+    next_meeting = _next_up(raw["agenda"])
     payload = {
         "authenticated": not used_sample,
         "sample": used_sample,

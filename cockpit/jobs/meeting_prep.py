@@ -23,10 +23,11 @@ def _next_meeting(events: list[dict]) -> dict | None:
 
 
 def _gather() -> tuple[dict | None, bool]:
-    """Return (next_meeting_or_None, used_sample)."""
+    """Return (next_meeting_or_None, used_sample). Skips calendar holds/blocks."""
     if connectors.is_authenticated():
         try:
-            return _next_meeting(connectors.calendar_today()), False
+            real = [e for e in connectors.calendar_today() if connectors.is_meeting(e)]
+            return _next_meeting(real), False
         except connectors.MetaCLIError as exc:
             log.warning("Connector error, using sample: %s", exc)
     from .. import sample_data as s

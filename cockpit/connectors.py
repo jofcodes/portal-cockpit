@@ -14,7 +14,7 @@ import json
 import logging
 import shutil
 import subprocess
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 log = logging.getLogger("cockpit.connectors")
 
@@ -127,18 +127,37 @@ def _normalize_event(e: dict) -> dict:
     }
 
 
-def _events_on(target: "date", limit: int) -> list[dict]:
-    """Upcoming events whose start date == target (CLI rejects date ranges)."""
-    rows = _run_json(["google.calendar.event", "list", f"--limit={max(limit * 3, 30)}"])
-    out = []
-    for e in rows:
-        iso = e.get("start", "")
-        try:
-            if datetime.fromisoformat(iso).date() == target:
-                out.append(_normalize_event(e))
-        except (ValueError, TypeError):
-            continue
-    return out[:limit]
+_BLOCK_WORDS = (
+    "do not book", "no meeting", "shuttle", "break", "lunch", "prep for the day",
+    "focus time", "focus block", "hold", "ooo", "out of office", "commute",
+    "busy", "blocked", "wfh", "gym", "personal", "dnd",
+)
+
+
+def is_meeting(e: dict) -> bool:
+    """Heuristic: a real meeting vs a calendar hold/block (Do Not Book, Break…)."""
+    name = (e.get("summary") or "").lower().strip()
+    if not name:
+        return False
+    return not any(w in name for w in _BLOCK_WORDS)
+
+
+def _events_on(target: date, limit: int) -> list[dict]:
+    """All events on `target` (full day, incl. earlier ones).
+
+    The CLI accepts --since/--until only as full RFC3339 timestamps (bare dates
+    400), so build local-midnight bounds. Falls back to listing upcoming events
+    and filtering by date if the ranged query is rejected.
+    """
+    since = datetime.combine(target, time.min).astimezone().isoformat()
+    until = datetime.combine(target + timedelta(days=1), time.min).astimezone().isoformat()
+    try:
+        rows = _run_json(["google.calendar.event", "list",
+                          f"--since={since}", f"--until={until}", f"--limit={limit}"])
+    except MetaCLIError:
+        rows = [e for e in _run_json(["google.calendar.event", "list", f"--limit={max(limit*3, 30)}"])
+                if (e.get("start", "")[:10] == target.isoformat())]
+    return [_normalize_event(e) for e in rows][:limit]
 
 
 def calendar_today(limit: int = 20) -> list[dict]:
