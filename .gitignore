@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.env
+
+# Personal work data (emails, calendar, drafts) and screenshots — NEVER commit.
+portal_data/
+
+# Logs
+logs/
+
+# macOS
+.DS_Store
+
+# Android app — generated dashboard + build outputs
+cockpit_app/app/src/main/assets/dashboard/index.html
+cockpit_app/.gradle/
+cockpit_app/.idea/
+cockpit_app/app/build/
+cockpit_app/app/release/
+cockpit_app/build/
+cockpit_app/captures/
+cockpit_app/*.iml
+cockpit_app/local.properties
+*.apk
+*.aab
+
+# Voice examples may contain Jo's real posts — keep local
+cockpit/voice_examples.txt
