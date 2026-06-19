@@ -39,6 +39,7 @@ def generate() -> str:
         "inbox": _load("inbox"),
         "workplace": _load("workplace"),
         "wrap": _load("wrap"),
+        "meetings": _load("meetings"),
     }
     blob = json.dumps(data).replace("</", "<\\/")  # safe to embed in <script>
     generated = datetime.now().strftime("%a %b %-d · %-I:%M %p")
@@ -170,6 +171,17 @@ function renderNow() {
   if (n) h += `<div class="next"><div class="label">Next up</div>
       <div class="title">${esc(n.summary||"Meeting")}</div>
       <div class="meta">${esc(n.start||"")} · ${esc(n.location||"")}</div></div>`;
+  // A3 — meeting prep packet for the next meeting
+  const mp = DATA.meetings || {};
+  if (mp.next_meeting && (mp.prep_note || (mp.attendees||[]).length)) {
+    h += `<div class="card"><h3>Meeting prep${sampleBadge(mp)}</h3>`;
+    if (mp.prep_note) h += `<div style="margin-bottom:10px">${esc(mp.prep_note)}</div>`;
+    if ((mp.attendees||[]).length) h += `<div class="sub" style="margin-bottom:6px">With: `
+        + mp.attendees.map(a=>esc(a.name) + (a.title?` (${esc(a.title)})`:"")).join(', ') + `</div>`;
+    if ((mp.threads||[]).length) h += mp.threads.map(t=>
+        `<div class="row"><span class="what">${esc(t.subject||"")}<div class="sub">${esc(t.from||"")}</div></span></div>`).join('');
+    h += `</div>`;
+  }
   if (b.focus && b.focus.length) h += `<div class="card"><h3>Today's focus</h3><ul class="focus">`
       + b.focus.map(f=>`<li>${esc(f)}</li>`).join('') + `</ul></div>`;
   if (b.agenda && b.agenda.length) h += `<div class="card"><h3>Agenda</h3>`

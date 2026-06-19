@@ -62,3 +62,8 @@ SAMPLE_TOM_EXAMPLES = [
     "Top of Mind — week of June 2\n\nShort one this week. Spent it heads-down on Atlas. Biggest "
     "lesson: pick the smallest demo that proves the whole pipeline, then widen. Onward.",
 ]
+
+SAMPLE_MEETING_THREADS = [
+    {"subject": "Re: Portal vibe-coding — can you demo Friday?", "from": "Maher Saba <maher@meta.com>"},
+    {"subject": "Cockpit tab layout — feedback", "from": "Boz <boz@meta.com>"},
+]

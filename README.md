@@ -24,20 +24,21 @@ work tools ──(meta CLI)──► cockpit/jobs/*  ──► portal_data/*.jso
 ## Tabs
 | Tab | Shows | Jobs |
 |-----|-------|------|
-| **Now / Next** | morning headline, next meeting, today's focus, agenda, shared docs | A1 brief |
+| **Now / Next** | morning headline, next meeting, **meeting-prep packet**, today's focus, agenda, shared docs | A1 + A3 |
 | **Inbox** | priority unread, drafted replies, waiting-on + draft nudges | A2 + A5 |
 | **Workplace** | Monday "Top of Mind" draft (staged for approval) | Top of Mind |
 | **Wrap** | end-of-day recap + tomorrow preview | A7 |
 
-## What's built (this slice)
+## What's built
 - `cockpit/` — Python package: `config`, `llm` (local Llama), `connectors`
-  (`meta google.*`), `sample_data`, `jobs/{brief,inbox,wrap,top_of_mind}`,
+  (`meta google.*`), `sample_data`, `jobs/{brief,inbox,meeting_prep,wrap,top_of_mind}`,
   `build_cockpit` (4-tab dashboard), `server` (Flask brain).
-- `cockpit_app/` — a native Portal app (clone of `portal_app`, package
-  `com.josephine.cockpit`) for the polished no-browser experience. Build with
-  `./deploy.sh` (needs Android Studio's JDK — see below).
-- `scripts/cockpit_job.sh` + launchd plists — 8am brief+inbox, 5pm wrap,
-  Mon 8am Top of Mind, plus an always-on server.
+- `cockpit_app/` — a **native Portal app** (`com.josephine.cockpit`), installed
+  and running on the Portal. Built **without Gradle** via `build_apk.sh`
+  (plain Java, no deps → aapt2/javac/d8/zipalign/apksigner). `./deploy.sh`
+  builds + installs + launches; `./refresh.sh` hot-updates the dashboard.
+- `scripts/cockpit_job.sh` + launchd plists — 8am brief+inbox+meeting-prep,
+  5pm wrap, Mon 8am Top of Mind, plus an always-on server.
 
 ## Run it
 
@@ -93,8 +94,8 @@ Local Ollama on `127.0.0.1:11434`, model `llama3.1:8b` (text). Override with
 `mllama` arch unsupported — so text uses `llama3.1:8b`.)
 
 ## Still to do (later phases, per the brief)
-A3 meeting-prep, A6 weekly Workplace digest, A8 notification triage, A10
-doc→actions; the voice layer; Home/Bee toggle. **Top of Mind** needs your real
-group + 2-3 example posts: set `COCKPIT_TOM_GROUP` and put examples in
-`cockpit/voice_examples.txt` (one per `---` separator).
+A6 weekly Workplace digest, A8 notification triage, A10 doc→actions; the voice
+layer; Home/Bee toggle. **Top of Mind** needs your real group + 2-3 example
+posts: set `COCKPIT_TOM_GROUP` and put examples in `cockpit/voice_examples.txt`
+(one per `---` separator).
 ```

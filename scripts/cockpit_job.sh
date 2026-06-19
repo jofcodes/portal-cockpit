@@ -16,10 +16,10 @@ cd "$REPO"
 run() { echo "==> $*"; "$PY" -m "$@"; }
 
 case "$SLOT" in
-  morning)  run cockpit.jobs.brief; run cockpit.jobs.inbox ;;
+  morning)  run cockpit.jobs.brief; run cockpit.jobs.inbox; run cockpit.jobs.meeting_prep ;;
   eod)      run cockpit.jobs.wrap ;;
   monday)   run cockpit.jobs.top_of_mind ;;
-  all)      run cockpit.jobs.brief; run cockpit.jobs.inbox; run cockpit.jobs.wrap ;;
+  all)      run cockpit.jobs.brief; run cockpit.jobs.inbox; run cockpit.jobs.meeting_prep; run cockpit.jobs.wrap ;;
   *) echo "Unknown slot: $SLOT (use morning|eod|monday|all)"; exit 1 ;;
 esac
 

@@ -109,6 +109,27 @@ def gmail_awaiting(limit: int = 25) -> list[dict]:
     ) or []
 
 
+def gmail_search(query: str, limit: int = 5) -> list[dict]:
+    """Generic Gmail search (full Gmail query syntax)."""
+    return _run_json(["google.gmail.message", "list", f"--query={query}", f"--limit={limit}"]) or []
+
+
+def directory_lookup(email: str) -> dict:
+    """Best-effort org lookup for an attendee (name, title, manager).
+
+    Returns {} if the directory isn't reachable — callers degrade gracefully.
+    """
+    try:
+        rows = _run_json(["google.people.directory", "search", f"--query={email}", "--limit=1"])
+        if isinstance(rows, list) and rows:
+            return rows[0]
+        if isinstance(rows, dict):
+            return rows
+    except MetaCLIError:
+        pass
+    return {}
+
+
 def drive_recent_docs(limit: int = 15) -> list[dict]:
     """Recently modified/shared docs (overnight-shared etc.)."""
     return _run_json(
