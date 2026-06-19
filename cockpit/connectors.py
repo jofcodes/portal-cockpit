@@ -14,6 +14,7 @@ import json
 import logging
 import shutil
 import subprocess
+from datetime import date, datetime, timedelta
 
 log = logging.getLogger("cockpit.connectors")
 
@@ -44,14 +45,32 @@ def _run(args: list[str], timeout: int = 60) -> str:
     return proc.stdout
 
 
-def _run_json(args: list[str], timeout: int = 60):
-    """Run a meta command with --output=json and parse the result."""
-    out = _run([*args, "--output=json"], timeout=timeout)
-    out = out.strip()
+def _unwrap(parsed) -> list[dict]:
+    """Normalize meta CLI JSON to a list of records.
+
+    The CLI returns either a bare list (e.g. drive) or a wrapper dict with a
+    `data` list + `pagination` (e.g. gmail, calendar). Error responses come back
+    as {"status": "error", "message": ...} with returncode 0.
+    """
+    if isinstance(parsed, list):
+        return parsed
+    if isinstance(parsed, dict):
+        if parsed.get("status") == "error":
+            raise MetaCLIError(parsed.get("message", "meta CLI error")[:300])
+        if isinstance(parsed.get("data"), list):
+            return parsed["data"]
+        # A single record dict — wrap it.
+        return [parsed]
+    return []
+
+
+def _run_json(args: list[str], timeout: int = 60) -> list[dict]:
+    """Run a meta command with --output=json and return a list of records."""
+    out = _run([*args, "--output=json"], timeout=timeout).strip()
     if not out:
         return []
     try:
-        return json.loads(out)
+        return _unwrap(json.loads(out))
     except json.JSONDecodeError:
         # Some commands print a preamble line before the JSON body.
         start = out.find("[")
@@ -60,7 +79,7 @@ def _run_json(args: list[str], timeout: int = 60):
             start = brace
         if start >= 0:
             try:
-                return json.loads(out[start:])
+                return _unwrap(json.loads(out[start:]))
             except json.JSONDecodeError:
                 pass
         log.warning("Could not parse JSON from: %.200s", out)
@@ -81,17 +100,54 @@ def is_authenticated() -> bool:
 
 # ── Reads ────────────────────────────────────────────────────────────────
 
+def _normalize_event(e: dict) -> dict:
+    """Map a raw calendar record to the shape the jobs/dashboard expect.
+
+    Raw `start` is a full ISO datetime; `attendees` is a comma-separated string
+    like "a@x.com (declined), b@y.com (needsAction)".
+    """
+    raw_start = e.get("start", "")
+    when = raw_start
+    try:
+        when = datetime.fromisoformat(raw_start).strftime("%-I:%M %p")
+    except (ValueError, TypeError):
+        pass
+    attendees = []
+    for chunk in (e.get("attendees") or "").split(","):
+        addr = chunk.strip().split(" ")[0].strip()
+        if "@" in addr:
+            attendees.append(addr)
+    return {
+        "start": when,
+        "iso": raw_start,
+        "summary": e.get("summary", ""),
+        "location": e.get("location", ""),
+        "attendees": attendees,
+        "join": e.get("zoom_link") or e.get("meet_link") or "",
+    }
+
+
+def _events_on(target: "date", limit: int) -> list[dict]:
+    """Upcoming events whose start date == target (CLI rejects date ranges)."""
+    rows = _run_json(["google.calendar.event", "list", f"--limit={max(limit * 3, 30)}"])
+    out = []
+    for e in rows:
+        iso = e.get("start", "")
+        try:
+            if datetime.fromisoformat(iso).date() == target:
+                out.append(_normalize_event(e))
+        except (ValueError, TypeError):
+            continue
+    return out[:limit]
+
+
 def calendar_today(limit: int = 20) -> list[dict]:
-    """Today's calendar events (start, summary, location, attendees…)."""
-    return _run_json(
-        ["google.calendar.event", "list", "--since=today", "--until=tomorrow", f"--limit={limit}"]
-    ) or []
+    """Today's calendar events (normalized: start, summary, location, attendees…)."""
+    return _events_on(date.today(), limit)
 
 
 def calendar_tomorrow(limit: int = 20) -> list[dict]:
-    return _run_json(
-        ["google.calendar.event", "list", "--since=tomorrow", "--until=in 2 days", f"--limit={limit}"]
-    ) or []
+    return _events_on(date.today() + timedelta(days=1), limit)
 
 
 def gmail_unread(limit: int = 25) -> list[dict]:
@@ -131,11 +187,8 @@ def directory_lookup(email: str) -> dict:
 
 
 def drive_recent_docs(limit: int = 15) -> list[dict]:
-    """Recently modified/shared docs (overnight-shared etc.)."""
-    return _run_json(
-        ["google.drive.file", "list", f"--limit={limit}",
-         "--columns=name,type,owner,modifiedTime,webViewLink"]
-    ) or []
+    """Recently modified/shared docs (default columns include name, owner, url)."""
+    return _run_json(["google.drive.file", "list", f"--limit={limit}"]) or []
 
 
 # ── Outbound (DRAFTS ONLY) ─────────────────────────────────────────────────
