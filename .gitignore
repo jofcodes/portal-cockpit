@@ -29,3 +29,4 @@ cockpit_app/local.properties
 
 # Voice examples may contain Jo's real posts — keep local
 cockpit/voice_examples.txt
+cockpit_app/manual_build/
